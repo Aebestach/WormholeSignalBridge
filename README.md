@@ -1,5 +1,7 @@
 # Wormhole Signal Bridge
 
+![Wormhole Signal Bridge — CommNet routing through a KEX wormhole tunnel](https://i.imgur.com/QgyrQpI.png)
+
 [中文说明](README-zh.md)
 
 **RealAntennas** treats interstellar separation as real RF path length—often making links across star systems impossible on link budget alone. **Kopernicus Expansion Continued** (KEX-Wormholes) can move vessels between systems, but it does not extend CommNet through the throat.
