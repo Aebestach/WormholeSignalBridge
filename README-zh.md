@@ -2,6 +2,8 @@
 
 ![Wormhole Signal Bridge — 经 KEX 虫洞隧道的 CommNet 路由示意](https://i.imgur.com/QgyrQpI.png)
 
+[English](README.md) | [中文](README-zh.md)
+
 在 **RealAntennas** 里，跨星系的物理距离会让链路预算几乎不可能成立——而 **Kopernicus Expansion Continued**（KEX-Wormholes）的虫洞可以把飞船送到另一个恒星系，却不会帮 CommNet「抄近路」。
 
 **Wormhole Signal Bridge** 在 RA 完成常规网络重建之后，自动扫描 KEX 配置里的全部虫洞配对，在虫洞两端的中继之间注入一条**等效距离很短**的隧道链路。多跳路由仍由 RealAntennas 自己算，例如：
