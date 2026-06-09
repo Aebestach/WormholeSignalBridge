@@ -32,10 +32,6 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\..\..\..\KSPDLL\others\0Harmony.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
@@ -46,7 +42,6 @@
     </Reference>
     <Reference Include="RealAntennas">
       <HintPath>..\..\..\..\KSPDLL\others\RealAntennas.dll</HintPath>
-      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="UnityEngine">
@@ -57,17 +52,41 @@
       <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HarmonyPatches\PrecomputeCompletePatch.cs" />
-    <Compile Include="Log.cs" />
+    <Compile Include="Bootstrap\WormholeBridgeBootstrap.cs" />
+    <Compile Include="Core\CelestialBodyDisplay.cs" />
+    <Compile Include="Core\Local.cs" />
+    <Compile Include="Core\Log.cs" />
+    <Compile Include="Core\WormholeSettings.cs" />
+    <Compile Include="Linking\WormholeLinkBuilder.cs" />
+    <Compile Include="Linking\WormholeLinkMetrics.cs" />
+    <Compile Include="Linking\WormholeLinkCalculator.cs" />
+    <Compile Include="Linking\WormholeLinkDiagnostics.cs" />
+    <Compile Include="Mouth\WormholeMouthNodeManager.cs" />
+    <Compile Include="Mouth\WormholeMouthPlacement.cs" />
+    <Compile Include="Mouth\WormholeMouthPointing.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RealAntennasReflection.cs" />
-    <Compile Include="WormholeBridgeBootstrap.cs" />
-    <Compile Include="WormholeLinkBuilder.cs" />
-    <Compile Include="WormholeLinkCalculator.cs" />
-    <Compile Include="WormholeRegistry.cs" />
-    <Compile Include="WormholeSettings.cs" />
+    <Compile Include="Registry\DiscoveredMouthRegistry.cs" />
+    <Compile Include="Registry\WormholeRegistry.cs" />
+    <Compile Include="Survey\KerbalismExperimentBridge.cs" />
+    <Compile Include="Survey\KerbalismWormholeSurveyGate.cs" />
+    <Compile Include="Survey\ModuleWormholeMouthSurvey.cs" />
+    <Compile Include="Survey\StockWormholeSurveyGate.cs" />
+    <Compile Include="Survey\SurveyPawMarks.cs" />
+    <Compile Include="Survey\WormholeMouthScienceResults.cs" />
+    <Compile Include="Survey\WormholeMouthSurveyAltitudeLabels.cs" />
+    <Compile Include="Survey\WormholeMouthSurveyNarrative.cs" />
+    <Compile Include="Survey\WormholeMouthSurveyLocation.cs" />
+    <Compile Include="Targeting\ModuleWormholeMouthAiming.cs" />
+    <Compile Include="Targeting\WormholeMouthAiming.cs" />
+    <Compile Include="Targeting\WormholeMouthTargetEvaluator.cs" />
+    <Compile Include="Targeting\WormholeMouthTargetGUI.cs" />
+    <Compile Include="Targeting\WormholeMouthTargetManager.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
