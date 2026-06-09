@@ -29,42 +29,42 @@ namespace WormholeSignalBridge
                     yield return new WaitForSeconds(1f);
             }
 
-            network.BeforePrecompute += OnBeforePrecompute;
-            network.AfterPrecomputeLinkages += OnAfterPrecomputeLinkages;
+            network.OnNetworkPreUpdate += OnNetworkPreUpdate;
+            network.NetworkUpdateComplete.Add(OnNetworkUpdateComplete);
             subscribed = true;
             WormholeMouthNodeManager.EnsureSynced(network, WormholeSettings.Current);
-            Log.Info("Initialized and subscribed to RealAntennas precompute link hooks.");
+            Log.Info("Initialized and subscribed to RealAntennas network rebuild events.");
         }
 
         private void OnDestroy()
         {
             if (subscribed && network != null)
             {
-                network.BeforePrecompute -= OnBeforePrecompute;
-                network.AfterPrecomputeLinkages -= OnAfterPrecomputeLinkages;
+                network.OnNetworkPreUpdate -= OnNetworkPreUpdate;
+                network.NetworkUpdateComplete.Remove(OnNetworkUpdateComplete);
                 subscribed = false;
             }
 
-            WormholeMouthNodeManager.ReleaseLocal(network);
+            WormholeMouthNodeManager.ReleaseLocal(network, suppressTopologyRefresh: true);
         }
 
-        private static void OnBeforePrecompute(RACommNetwork net)
+        private void OnNetworkPreUpdate()
         {
-            if (net == null)
+            if (network == null)
+                return;
+
+            WormholeRegistry.Refresh();
+            WormholeMouthNodeManager.EnsureSynced(network, WormholeSettings.Current);
+        }
+
+        private void OnNetworkUpdateComplete()
+        {
+            if (network == null)
                 return;
 
             WormholeRegistry.Refresh();
             WormholeMouthScienceResults.RegisterAll();
-            WormholeMouthNodeManager.EnsureSynced(net, WormholeSettings.Current);
-            WormholeLinkMetrics.PrepareCollectors(net);
-        }
-
-        private static void OnAfterPrecomputeLinkages(RACommNetwork net)
-        {
-            if (net == null)
-                return;
-
-            WormholeLinkBuilder.InjectLinks(net);
+            WormholeLinkBuilder.InjectLinks(network);
         }
     }
 

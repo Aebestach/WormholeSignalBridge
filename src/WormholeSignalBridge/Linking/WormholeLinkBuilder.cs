@@ -24,8 +24,7 @@ namespace WormholeSignalBridge
             bool debug = settings.DebugLogging;
             int created = 0;
             int failedPairs = 0;
-            LinkBudgetLookup budgets = LinkBudgetLookup.FromCollectors(network.linkMetricsCollectors);
-            Dictionary<CelestialBody, List<RelayCandidate>> candidatesByBody = CollectCandidates(network, settings, debug, budgets);
+            Dictionary<CelestialBody, List<RelayCandidate>> candidatesByBody = CollectCandidates(network, settings, debug);
 
             if (candidatesByBody.Count == 0)
             {
@@ -34,7 +33,7 @@ namespace WormholeSignalBridge
                     Log.DebugLog(
                         $"No wormhole relay candidates this rebuild (pairs={WormholeRegistry.ActivePairs.Count}, " +
                         $"mouth nodes={WormholeMouthNodeManager.ActiveNodes.Count}, " +
-                        $"link metric collectors={network.linkMetricsCollectors?.Count ?? 0}).");
+                        "requiring RA mouth link budgets).");
                 }
                 return;
             }
@@ -73,14 +72,14 @@ namespace WormholeSignalBridge
                 {
                     foreach (RelayCandidate nodeB in nodesB)
                     {
-                        if (TryCreateTunnelLink(network, nodeA, nodeB, settings, budgets))
+                        if (TryCreateTunnelLink(network, nodeA, nodeB, settings))
                         {
                             created++;
                         }
                         else if (debug)
                         {
                             failedPairs++;
-                            Log.DebugLog(WormholeLinkDiagnostics.DescribeTunnelFailure(nodeA, nodeB, settings, budgets));
+                            Log.DebugLog(WormholeLinkDiagnostics.DescribeTunnelFailure(nodeA, nodeB, settings));
                         }
                     }
                 }
@@ -90,13 +89,13 @@ namespace WormholeSignalBridge
             {
                 Log.DebugLog(
                     $"Rebuild summary: injected/updated {created} tunnel link(s), " +
-                    $"{failedPairs} vessel pair(s) failed, link metric collectors={network.linkMetricsCollectors?.Count ?? 0}.");
+                    $"{failedPairs} vessel pair(s) failed; RA mouth link budgets are required.");
             }
         }
 
-        private static bool TryCreateTunnelLink(RACommNetwork network, RelayCandidate nodeA, RelayCandidate nodeB, WormholeLinkSettings settings, LinkBudgetLookup budgets)
+        private static bool TryCreateTunnelLink(RACommNetwork network, RelayCandidate nodeA, RelayCandidate nodeB, WormholeLinkSettings settings)
         {
-            TunnelLinkBudget? budget = WormholeLinkCalculator.BestTunnelLink(nodeA, nodeB, settings, budgets);
+            TunnelLinkBudget? budget = WormholeLinkCalculator.BestTunnelLink(nodeA, nodeB, settings);
             if (!budget.HasValue || budget.Value.Fwd.DataRate <= 0 || budget.Value.Rev.DataRate <= 0)
                 return false;
 
@@ -126,7 +125,7 @@ namespace WormholeSignalBridge
             return true;
         }
 
-        private static Dictionary<CelestialBody, List<RelayCandidate>> CollectCandidates(RACommNetwork network, WormholeLinkSettings settings, bool debug, LinkBudgetLookup budgets)
+        private static Dictionary<CelestialBody, List<RelayCandidate>> CollectCandidates(RACommNetwork network, WormholeLinkSettings settings, bool debug)
         {
             var result = new Dictionary<CelestialBody, List<RelayCandidate>>();
             var bodies = new HashSet<CelestialBody>();

@@ -40,6 +40,9 @@ namespace WormholeSignalBridge
         internal double MaxEccentricity = 0.8;
         internal double MinUsableOrbitQuality = 0.05;
         internal double OrbitLossScale = 1.0;
+        internal double MouthProxyTxPower = 60;
+        internal double MouthProxyDishDiameter = 30;
+        internal double MouthProxySymbolRate = 1e9;
     }
 
     internal static class WormholeBridgePresets

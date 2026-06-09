@@ -68,8 +68,7 @@ namespace WormholeSignalBridge
             bool previousEnabled = GUI.enabled;
             GUI.enabled = entry.Selectable;
 
-            string line = $"{entry.Label}  —  {entry.StatusHint}";
-            if (GUILayout.Button(line))
+            if (GUILayout.Button(entry.Label))
                 SelectEntry(entry);
 
             GUI.enabled = previousEnabled;

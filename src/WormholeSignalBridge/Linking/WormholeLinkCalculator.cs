@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using CommNet;
 using RealAntennas;
-using RealAntennas.Network;
 using UnityEngine;
 
 namespace WormholeSignalBridge
@@ -13,7 +13,6 @@ namespace WormholeSignalBridge
         internal Vessel Vessel;
         internal CelestialBody WormholeBody;
         internal double OrbitQuality = 1;
-        internal double OrbitExtraLossDb;
         internal double OrbitMetricMultiplier = 1;
         internal readonly List<RealAntenna> Antennas = new List<RealAntenna>();
     }
@@ -110,7 +109,7 @@ namespace WormholeSignalBridge
                 return false;
             }
 
-            if (!TryEvaluateOrbit(vessel, wormholeBody, settings, out double quality, out double extraLossDb, out double metricMultiplier, out rejectReason))
+            if (!TryEvaluateOrbit(vessel, wormholeBody, settings, out double quality, out double metricMultiplier, out rejectReason))
                 return false;
 
             candidate = new RelayCandidate
@@ -120,7 +119,6 @@ namespace WormholeSignalBridge
                 Vessel = vessel,
                 WormholeBody = wormholeBody,
                 OrbitQuality = quality,
-                OrbitExtraLossDb = extraLossDb,
                 OrbitMetricMultiplier = metricMultiplier
             };
 
@@ -143,7 +141,7 @@ namespace WormholeSignalBridge
             return true;
         }
 
-        internal static TunnelLinkBudget? BestTunnelLink(RelayCandidate a, RelayCandidate b, WormholeLinkSettings settings, LinkBudgetLookup budgets)
+        internal static TunnelLinkBudget? BestTunnelLink(RelayCandidate a, RelayCandidate b, WormholeLinkSettings settings)
         {
             TunnelDirectionBudget? bestFwd = null;
             TunnelDirectionBudget? bestRev = null;
@@ -152,7 +150,7 @@ namespace WormholeSignalBridge
             {
                 foreach (RealAntenna rx in b.Antennas)
                 {
-                    TunnelDirectionBudget? budget = DirectionBudget(a, tx, b, rx, settings, budgets);
+                    TunnelDirectionBudget? budget = DirectionBudget(a, tx, b, rx, settings);
                     if (budget.HasValue && (!bestFwd.HasValue || budget.Value.DataRate > bestFwd.Value.DataRate))
                         bestFwd = budget;
                 }
@@ -162,7 +160,7 @@ namespace WormholeSignalBridge
             {
                 foreach (RealAntenna rx in a.Antennas)
                 {
-                    TunnelDirectionBudget? budget = DirectionBudget(b, tx, a, rx, settings, budgets);
+                    TunnelDirectionBudget? budget = DirectionBudget(b, tx, a, rx, settings);
                     if (budget.HasValue && (!bestRev.HasValue || budget.Value.DataRate > bestRev.Value.DataRate))
                         bestRev = budget;
                 }
@@ -179,72 +177,174 @@ namespace WormholeSignalBridge
             CelestialBody wormholeBody,
             WormholeLinkSettings settings,
             out string rejectReason) =>
-            TryEvaluateOrbit(vessel, wormholeBody, settings, out _, out _, out _, out rejectReason);
+            TryEvaluateOrbit(vessel, wormholeBody, settings, out _, out _, out rejectReason);
 
         internal static TunnelDirectionBudget? DirectionBudget(
             RelayCandidate source,
             RealAntenna sourceAntenna,
             RelayCandidate target,
             RealAntenna targetAntenna,
-            WormholeLinkSettings settings,
-            LinkBudgetLookup budgets)
+            WormholeLinkSettings settings)
         {
             if (!WormholeMouthPointing.PointsAtMouth(sourceAntenna, source.Vessel, source.WormholeBody, settings) ||
                 !WormholeMouthPointing.PointsAtMouth(targetAntenna, target.Vessel, target.WormholeBody, settings))
                 return null;
 
-            LinkDetails entryBudget = budgets.GetByTransmitter(source.Node, source.MouthNode, sourceAntenna);
-            LinkDetails exitBudget = budgets.GetByReceiver(target.MouthNode, target.Node, targetAntenna);
-            if (entryBudget.tx == null || exitBudget.rx == null)
-                return BackgroundDirectionBudget(source, sourceAntenna, target, targetAntenna, settings);
-
-            double dataRate = Math.Min(entryBudget.dataRate, exitBudget.dataRate);
-            if (dataRate <= 0)
+            if (!AntennasTunnelCompatible(sourceAntenna, targetAntenna))
                 return null;
 
-            double maxDataRate = Math.Min(entryBudget.maxDataRate, exitBudget.maxDataRate);
-            double metric = Math.Min(entryBudget.Metric, exitBudget.Metric);
-            return CreateDirectionBudget(source, sourceAntenna, target, targetAntenna, dataRate, maxDataRate, metric, settings);
+            return RaMouthDirectionBudget(source, sourceAntenna, target, targetAntenna, settings);
         }
 
-        internal static bool HasSnapshotBudget(
+        internal static bool HasRaMouthBudget(
             RelayCandidate source,
             RealAntenna sourceAntenna,
             RelayCandidate target,
-            RealAntenna targetAntenna,
-            LinkBudgetLookup budgets) =>
-            budgets.GetByTransmitter(source.Node, source.MouthNode, sourceAntenna).tx != null &&
-            budgets.GetByReceiver(target.MouthNode, target.Node, targetAntenna).rx != null;
+            RealAntenna targetAntenna) =>
+            TryGetVesselToMouthBudget(source.Node, source.MouthNode, sourceAntenna, out _, out _, out _) &&
+            TryGetMouthToVesselBudget(target.Node, target.MouthNode, targetAntenna, out _, out _, out _);
 
-        internal static double EstimateBackgroundDataRate(RealAntenna sourceAntenna, RealAntenna targetAntenna)
+        internal static double EstimateMouthLinkDataRate(RACommNode vessel, RACommNode mouth, RealAntenna vesselAntenna)
         {
-            if (sourceAntenna == null || targetAntenna == null)
-                return 0;
+            if (TryGetVesselToMouthBudget(vessel, mouth, vesselAntenna, out double rate, out _, out _) && rate > 0)
+                return rate;
 
-            if (!sourceAntenna.Compatible(targetAntenna))
-                return 0;
-
-            if (sourceAntenna is RealAntennaDigital sourceDigital &&
-                targetAntenna is RealAntennaDigital targetDigital &&
-                !sourceDigital.modulator.Compatible(targetDigital.modulator))
-                return 0;
-
-            return Math.Min(sourceAntenna.DataRate, targetAntenna.DataRate);
+            return 0;
         }
 
-        private static TunnelDirectionBudget? BackgroundDirectionBudget(
+        private static TunnelDirectionBudget? RaMouthDirectionBudget(
             RelayCandidate source,
             RealAntenna sourceAntenna,
             RelayCandidate target,
             RealAntenna targetAntenna,
             WormholeLinkSettings settings)
         {
-            double dataRate = EstimateBackgroundDataRate(sourceAntenna, targetAntenna);
+            if (!TryGetVesselToMouthBudget(source.Node, source.MouthNode, sourceAntenna, out double srcRate, out double srcMax, out double srcMetric))
+                return null;
+
+            if (!TryGetMouthToVesselBudget(target.Node, target.MouthNode, targetAntenna, out double dstRate, out double dstMax, out double dstMetric))
+                return null;
+
+            double dataRate = Math.Min(srcRate, dstRate);
             if (dataRate <= 0)
                 return null;
 
-            return CreateDirectionBudget(source, sourceAntenna, target, targetAntenna, dataRate, dataRate, 1.0, settings);
+            double maxDataRate = Math.Min(srcMax, dstMax);
+            double metric = Math.Min(srcMetric, dstMetric);
+            return CreateDirectionBudget(source, sourceAntenna, target, targetAntenna, dataRate, maxDataRate, metric, settings);
         }
+
+        private static bool TryGetVesselToMouthBudget(
+            RACommNode vessel,
+            RACommNode mouth,
+            RealAntenna vesselAntenna,
+            out double dataRate,
+            out double maxDataRate,
+            out double metric)
+        {
+            dataRate = 0;
+            maxDataRate = 0;
+            metric = 0;
+
+            if (!TryGetRaCommLink(vessel, mouth, out RACommLink link))
+                return false;
+
+            if (ReferenceEquals(link.a, vessel))
+            {
+                if (!AntennaMatches(link.FwdAntennaTx, vesselAntenna))
+                    return false;
+
+                dataRate = link.FwdDataRate;
+                maxDataRate = link.FwdDataRate;
+                metric = link.FwdMetric;
+                return dataRate > 0;
+            }
+
+            if (ReferenceEquals(link.b, vessel))
+            {
+                if (!AntennaMatches(link.RevAntennaTx, vesselAntenna))
+                    return false;
+
+                dataRate = link.RevDataRate;
+                maxDataRate = link.RevDataRate;
+                metric = link.RevMetric;
+                return dataRate > 0;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetMouthToVesselBudget(
+            RACommNode vessel,
+            RACommNode mouth,
+            RealAntenna vesselAntenna,
+            out double dataRate,
+            out double maxDataRate,
+            out double metric)
+        {
+            dataRate = 0;
+            maxDataRate = 0;
+            metric = 0;
+
+            if (!TryGetRaCommLink(vessel, mouth, out RACommLink link))
+                return false;
+
+            if (ReferenceEquals(link.a, vessel))
+            {
+                if (!AntennaMatches(link.RevAntennaRx, vesselAntenna))
+                    return false;
+
+                dataRate = link.RevDataRate;
+                maxDataRate = link.RevDataRate;
+                metric = link.RevMetric;
+                return dataRate > 0;
+            }
+
+            if (ReferenceEquals(link.b, vessel))
+            {
+                if (!AntennaMatches(link.FwdAntennaRx, vesselAntenna))
+                    return false;
+
+                dataRate = link.FwdDataRate;
+                maxDataRate = link.FwdDataRate;
+                metric = link.FwdMetric;
+                return dataRate > 0;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetRaCommLink(RACommNode a, RACommNode b, out RACommLink link)
+        {
+            link = null;
+            if (a == null || b == null)
+                return false;
+
+            if (!a.TryGetValue(b, out CommLink commLink) || !(commLink is RACommLink raLink))
+                return false;
+
+            link = raLink;
+            return true;
+        }
+
+        private static bool AntennasTunnelCompatible(RealAntenna sourceAntenna, RealAntenna targetAntenna)
+        {
+            if (sourceAntenna == null || targetAntenna == null)
+                return false;
+
+            if (!sourceAntenna.Compatible(targetAntenna))
+                return false;
+
+            if (sourceAntenna is RealAntennaDigital sourceDigital &&
+                targetAntenna is RealAntennaDigital targetDigital &&
+                !sourceDigital.modulator.Compatible(targetDigital.modulator))
+                return false;
+
+            return true;
+        }
+
+        private static bool AntennaMatches(RealAntenna linkAntenna, RealAntenna requested) =>
+            linkAntenna != null && requested != null && ReferenceEquals(linkAntenna, requested);
 
         private static TunnelDirectionBudget CreateDirectionBudget(
             RelayCandidate source,
@@ -263,10 +363,9 @@ namespace WormholeSignalBridge
             return new TunnelDirectionBudget(sourceAntenna, targetAntenna, dataRate, maxDataRate, metric);
         }
 
-        private static bool TryEvaluateOrbit(Vessel vessel, CelestialBody wormholeBody, WormholeLinkSettings settings, out double quality, out double extraLossDb, out double metricMultiplier, out string rejectReason)
+        private static bool TryEvaluateOrbit(Vessel vessel, CelestialBody wormholeBody, WormholeLinkSettings settings, out double quality, out double metricMultiplier, out string rejectReason)
         {
             quality = 1;
-            extraLossDb = 0;
             metricMultiplier = 1;
             rejectReason = null;
 
@@ -336,8 +435,7 @@ namespace WormholeSignalBridge
             }
 
             double clamped = Math.Max(settings.MinUsableOrbitQuality, Math.Min(1.0, quality));
-            extraLossDb = -10.0 * Math.Log10(clamped) * settings.OrbitLossScale;
-            metricMultiplier = Math.Sqrt(clamped);
+            metricMultiplier = Math.Pow(clamped, Math.Max(0, settings.OrbitLossScale) * 0.5);
             return true;
         }
 
@@ -394,75 +492,4 @@ namespace WormholeSignalBridge
         }
     }
 
-    internal sealed class LinkBudgetLookup
-    {
-        private static readonly LinkDetails Empty = default;
-
-        private readonly Dictionary<(RACommNode txNode, RACommNode rxNode, RealAntenna tx), LinkDetails> byTransmitter;
-        private readonly Dictionary<(RACommNode txNode, RACommNode rxNode, RealAntenna rx), LinkDetails> byReceiver;
-
-        private LinkBudgetLookup(
-            Dictionary<(RACommNode, RACommNode, RealAntenna), LinkDetails> byTransmitter,
-            Dictionary<(RACommNode, RACommNode, RealAntenna), LinkDetails> byReceiver)
-        {
-            this.byTransmitter = byTransmitter;
-            this.byReceiver = byReceiver;
-        }
-
-        internal static LinkBudgetLookup FromCollectors(IEnumerable<LinkMetricsCollector> collectors)
-        {
-            var byTx = new Dictionary<(RACommNode, RACommNode, RealAntenna), LinkDetails>();
-            var byRx = new Dictionary<(RACommNode, RACommNode, RealAntenna), LinkDetails>();
-            if (collectors != null)
-            {
-                foreach (LinkMetricsCollector collector in collectors)
-                {
-                    if (collector?.Items == null)
-                        continue;
-
-                    foreach (List<LinkDetails> detailsList in collector.Items.Values)
-                    {
-                        foreach (LinkDetails detail in detailsList)
-                        {
-                            if (detail.dataRate <= 0 || detail.txNode == null || detail.rxNode == null ||
-                                detail.tx == null || detail.rx == null)
-                                continue;
-
-                            KeepBest(byTx, (detail.txNode, detail.rxNode, detail.tx), detail);
-                            KeepBest(byRx, (detail.txNode, detail.rxNode, detail.rx), detail);
-                        }
-                    }
-                }
-            }
-
-            return new LinkBudgetLookup(byTx, byRx);
-        }
-
-        internal LinkDetails GetByTransmitter(RACommNode txNode, RACommNode rxNode, RealAntenna tx)
-        {
-            if (txNode == null || rxNode == null || tx == null)
-                return Empty;
-
-            byTransmitter.TryGetValue((txNode, rxNode, tx), out LinkDetails budget);
-            return budget;
-        }
-
-        internal LinkDetails GetByReceiver(RACommNode txNode, RACommNode rxNode, RealAntenna rx)
-        {
-            if (txNode == null || rxNode == null || rx == null)
-                return Empty;
-
-            byReceiver.TryGetValue((txNode, rxNode, rx), out LinkDetails budget);
-            return budget;
-        }
-
-        private static void KeepBest(
-            Dictionary<(RACommNode, RACommNode, RealAntenna), LinkDetails> map,
-            (RACommNode, RACommNode, RealAntenna) key,
-            LinkDetails budget)
-        {
-            if (!map.TryGetValue(key, out LinkDetails existing) || budget.dataRate > existing.dataRate)
-                map[key] = budget;
-        }
-    }
 }

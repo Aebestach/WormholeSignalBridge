@@ -6,18 +6,34 @@
 
 In saves like **Kcalbeloh System**, a familiar scene plays out: a relay orbits Jool at **WH3141A**, while a probe circles **WH3141B** on the far side—KEX wormholes let craft shuttle between mouths A and B, but **RealAntennas** still treats interstellar separation as real RF path length. Commands and science from Kerbin often fall short on link budget; **CommNet does not cross the throat on its own.**
 
-**Wormhole Signal Bridge** runs after RA’s normal network rebuild, discovers every KEX wormhole pair from Kopernicus config, and injects a tunnel link between directional relays at each mouth. Multi-hop routing stays in RealAntennas, e.g. `Kerbin probe → Jool (WH3141A) relay → [tunnel] → Kcalbeloh (WH3141B) relay → destination`.
+**Wormhole Signal Bridge** (v2) runs after RA’s normal network rebuild, discovers every KEX wormhole pair from Kopernicus config, and injects a tunnel link between directional relays at each mouth. Multi-hop routing stays in RealAntennas, e.g. `Kerbin probe → Jool (WH3141A) relay → [tunnel] → Kcalbeloh (WH3141B) relay → destination`.
+
+## How it works
+
+WSB hooks RealAntennas network events instead of patching RA internals:
+
+1. **On network pre-update** — refresh the KEX wormhole registry and sync invisible **mouth proxy nodes** (one per wormhole celestial body). Each proxy is a ground-station-style `RACommNode` parked at the mouth’s Body Lat/Lon/Alt, carrying a high-gain digital antenna on every RA band so Precompute can build normal **relay ↔ mouth** link budgets.
+2. **On network update complete** — scan orbiting relays, then inject **mouth A ↔ mouth B** tunnel hops for qualifying antenna pairs.
+
+A relay qualifies when it orbits the wormhole body, has comm power, passes orbit constraints, carries at least one online **directional** `RealAntennaDigital`, and that antenna is **physically aimed** at the local mouth within RA’s max pointing loss. The configured RA target should be the surveyed Body Lat/Lon/Alt on that CB (set manually or via **Wormhole Mouth Targeting**).
+
+Tunnel **data rate** per direction is the minimum of the two relay ↔ mouth Precompute rates on that side (source relay → its mouth, destination mouth → destination relay). Tunnel **metric** takes the weaker of those mouth-leg metrics, then applies insertion loss and orbit-quality penalties. If either mouth leg has no Precompute budget, no tunnel is injected for that pair.
+
+Before a mouth is surveyed, proxy nodes use a provisional parent-facing lat/lon estimate; after GRAVMAX discovery, coordinates are cached in the save and stay fixed.
 
 ## Requirements
 
-- [RealAntennas](https://github.com/KSP-RO/RealAntennas)
+- [RealAntennas](https://github.com/KSP-RO/RealAntennas) 2.x
 - [Kopernicus Expansion Continued](https://github.com/VabienArt/KopernicusExpansion-Continueder) (KEX-Wormholes)
+
+**Optional:** [Kerbalism](https://github.com/Kerbalism/Kerbalism) with **FeatureScience** — adds a Kerbalism experiment entry on GRAVMAX alongside the stock WSB scan. Not required for tunnel links or stock science.
 
 ## Relay setup
 
 Each wormhole mouth (each celestial body in a KEX `body` / `partner` pair) needs **one powered relay in orbit** with:
 
-- At least one enabled **directional RA antenna** (`ModuleRealAntenna`) aimed at the local wormhole **Mouth** using RA’s existing **Body Lat/Lon/Alt** targeting (enter lat, lon, alt for the wormhole CB). **Omni antennas cannot form the tunnel.**
+- At least one enabled **directional RA antenna** (`ModuleRealAntenna`) aimed at the local wormhole **Mouth** using RA’s **Body Lat/Lon/Alt** targeting (enter lat, lon, alt for the wormhole CB, or use **Wormhole Mouth Targeting** after survey). **Omni antennas cannot form the tunnel.**
+- The dish must be **physically pointed** at the mouth (within RA max pointing loss), not merely configured with coordinates.
 - The **same RFBand** on both mouths, with compatible symbol-rate ranges
 - Additional antennas recommended for KSC / in-system backbone backhaul
 
@@ -26,14 +42,14 @@ The tunnel exists only between **mouth A ↔ mouth B** relays. Other craft join 
 - To the far side: `Kerbin probe → … → mouth A relay → [tunnel] → mouth B relay → … → destination`
 - Back to Kerbol: `Kcalbeloh probe → mouth B relay → [tunnel] → mouth A relay → … → KSC`
 
-Local hops (craft ↔ relay, relay ↔ backbone) still use normal RA physics—real distance, occlusion, and pointing. An omni on mouth B does **not** reach mouth A; both ends need compatible directional dishes aimed at their local wormhole **Mouth** (Body Lat/Lon/Alt on that CB).
+Local hops (craft ↔ relay, relay ↔ backbone) still use normal RA physics—real distance, occlusion, and pointing. An omni on mouth B does **not** reach mouth A; both ends need compatible directional dishes aimed at their local wormhole **Mouth**.
 
 | Mouth | Directional (tunnel) | Other antennas (local/backhaul) |
 |-------|----------------------|---------------------------------|
 | **A** (e.g. `WH3141A`, orbiting Jool) | Mouth on `WH3141A` (Body Lat/Lon/Alt) | KSC / Kerbol deep-space network |
 | **B** (e.g. `WH3141B`, orbiting Kcalbeloh’s host star) | Mouth on `WH3141B` (Body Lat/Lon/Alt) | In-system relays / planetary network |
 
-All KEX wormholes are discovered automatically—**no** manual configuration.
+All KEX wormholes are discovered automatically—**no** manual wormhole list configuration.
 
 ## Discovering wormhole mouths (GRAVMAX)
 
@@ -42,7 +58,7 @@ WSB adds a second science experiment to the stock **GRAVMAX** (`sensorGravimeter
 1. Orbit the wormhole celestial body (e.g. `WH3141A`) within the relay altitude band (above KEX influence altitude, below the jump zone ceiling).
 2. Run the WSB resonance scan on GRAVMAX (stock science UI, or Kerbalism experiment UI when FeatureScience is enabled).
 3. When data collection completes, WSB **permanently registers** that mouth’s **Body Lat/Lon/Alt** coordinates in the save (cached; they do **not** drift with orbit or time), and awards a **75 000 funds** bonus on first discovery per mouth. On first survey, the horizontal position is usually on the side of the wormhole CB facing its parent (`referenceBody`), e.g. the side of `WH3141A` facing Jool—that lat/lon then stays fixed for the save.
-4. On each **directional** `ModuleRealAntenna` part, use **Wormhole Mouth Targeting** in the **RealAntennas** PAW group (same place as **Antenna Targeting**). This button appears only after at least one mouth has been surveyed. It opens a WSB window styled like RA’s target UI, listing discovered mouths (e.g. `WH3141A Mouth`). Select one to aim **this antenna only**—nothing is auto-aimed. Each mouth must be surveyed separately; you can only select a mouth while your relay orbits that wormhole body, with RA comm online and an acceptable orbit. Entries show link budget when available.
+4. On each **directional** `ModuleRealAntenna` part, use **Wormhole Mouth Targeting** in the **RealAntennas** PAW group (same place as **Antenna Targeting**). This button appears only after at least one mouth has been surveyed. It opens a WSB window styled like RA’s target UI, listing discovered mouths (e.g. `WH3141A Mouth`). Select one to aim **this antenna only**—nothing is auto-aimed. The chosen mouth is remembered on the part. Each mouth must be surveyed separately; you can only select a mouth while your relay orbits that wormhole body, with RA comm online and an acceptable orbit. Entries show relay ↔ mouth link rate when Precompute budgets exist.
 
 These actions set the same **Body Fixed Point** target RA already uses internally. Repeat scans on an already-discovered mouth still yield science (subject depletion rules apply) but do not re-register the mouth.
 
@@ -88,7 +104,7 @@ Mouth **altitude** is about **(KEX jump zone ceiling + H<sub>inf</sub>) / 2** (b
 
 | Parameter | Role |
 |-----------|------|
-| **Effective distance** | Nominal RF path length (m) stored on the injected wormhole hop. The tunnel prefers RA Precompute snapshots for the relay ↔ Mouth legs; when one or both relays are in the background and no snapshot is available, it falls back to the common data rate supported by the two wormhole-facing directional antennas. |
+| **Effective distance** | Nominal RF path length (m) stored on the injected wormhole hop. The tunnel still requires current RA Precompute budgets for both relay ↔ Mouth legs; if either mouth budget is unavailable, no tunnel link is injected for that antenna pair. |
 | **Insertion loss** | Extra throat attenuation (dB). Scales link **metric** (connection quality), not `dataRate` (transfer rate) directly. |
 | **Advanced orbit constraints** | When on, applies altitude ceiling, orbit-quality scoring, and optional strict Pe/Ap, inclination, and eccentricity rules on top of **H<sub>inf</sub>**. |
 | **Max mouth altitude** | Instant reject above this height (advanced mode). |
@@ -98,12 +114,12 @@ Mouth **altitude** is about **(KEX jump zone ceiling + H<sub>inf</sub>) / 2** (b
 | **Preferred / strict inclination** | Soft or hard limits on relay inclination. |
 | **Ideal / max eccentricity** | Full quality below ideal; soft or hard limits above. |
 | **Min usable orbit quality** | Combined orbit score must stay above this or the link is rejected. |
-| **Orbit loss scale** | Multiplier for extra signal loss when orbit quality &lt; 1. |
+| **Orbit loss scale** | Multiplier for the orbit-quality penalty applied to the injected tunnel **metric** when orbit quality &lt; 1. It does not directly reduce `dataRate`; the relay ↔ Mouth rates remain RA Precompute results. |
 
 | Key | Default (Normal) | Meaning |
 |-----|------------------|---------|
 | `enabled` | `true` | Global on/off |
-| `debugLogging` | `false` | Log injected links |
+| `debugLogging` | `false` | Log mouth nodes, relay candidates, pointing checks, and injected links to `KSP.log` |
 
 ## Build
 
@@ -121,3 +137,5 @@ Copy the `GameData/WormholeSignalBridge` folder into your KSP `GameData` directo
 
 - CommNet map lines may still draw across normal space; link quality uses RA budgets plus wormhole distance/loss and optional orbit quality.
 - Third-party parts that still use stock `ModuleDataTransmitter` without an RA patch are ignored for tunnel hops.
+- Enable **debug logging** in difficulty settings to see why a relay pair failed (orbit, pointing, band mismatch, missing mouth budget, etc.).
+- Mouth proxy nodes are invisible and exist only for RA Precompute; players interact with surveyed coordinates via GRAVMAX and **Wormhole Mouth Targeting**.

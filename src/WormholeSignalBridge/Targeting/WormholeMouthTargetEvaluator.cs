@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using RealAntennas;
-using RealAntennas.Network;
 using UnityEngine;
 
 namespace WormholeSignalBridge
@@ -46,7 +45,6 @@ namespace WormholeSignalBridge
             WormholeLinkSettings settings = WormholeSettings.Current;
             Vessel vessel = module.vessel;
             RACommNode vesselNode = GetVesselNode(vessel);
-            LinkBudgetLookup budgets = LinkBudgetLookup.FromCollectors(RACommNetScenario.RACN?.linkMetricsCollectors);
 
             foreach (CelestialBody body in DiscoveredMouthRegistry.DiscoveredBodies())
             {
@@ -57,7 +55,7 @@ namespace WormholeSignalBridge
                     CurrentlyAimed = WormholeMouthPointing.PointsAtMouth(module.RAAntenna, vessel, body, settings)
                 };
 
-                EvaluateEntry(vessel, vesselNode, body, settings, budgets, module.RAAntenna, entry);
+                EvaluateEntry(vessel, vesselNode, body, settings, module.RAAntenna, entry);
                 entries.Add(entry);
             }
 
@@ -70,7 +68,6 @@ namespace WormholeSignalBridge
             RACommNode vesselNode,
             CelestialBody body,
             WormholeLinkSettings settings,
-            LinkBudgetLookup budgets,
             RealAntenna antenna,
             MouthTargetEntry entry)
         {
@@ -109,11 +106,7 @@ namespace WormholeSignalBridge
             }
 
             if (WormholeMouthNodeManager.ActiveNodes.TryGetValue(body, out WormholeMouthNode mouthNode))
-            {
-                LinkDetails budget = budgets.GetByTransmitter(vesselNode, mouthNode.Node, antenna);
-                if (budget.tx != null)
-                    entry.LinkDataRate = budget.dataRate;
-            }
+                entry.LinkDataRate = WormholeLinkCalculator.EstimateMouthLinkDataRate(vesselNode, mouthNode.Node, antenna);
 
             entry.Selectable = true;
             if (entry.LinkDataRate > 0)

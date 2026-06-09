@@ -5,13 +5,13 @@ namespace WormholeSignalBridge
 {
     internal static class WormholeLinkDiagnostics
     {
-        internal static string DescribeTunnelFailure(RelayCandidate a, RelayCandidate b, WormholeLinkSettings settings, LinkBudgetLookup budgets)
+        internal static string DescribeTunnelFailure(RelayCandidate a, RelayCandidate b, WormholeLinkSettings settings)
         {
             var sb = new StringBuilder();
             sb.Append($"no viable tunnel between {a.Vessel.vesselName} and {b.Vessel.vesselName}");
 
-            TunnelDirectionBudget? fwd = FindBestDirection(a, b, settings, budgets, out string fwdDetail);
-            TunnelDirectionBudget? rev = FindBestDirection(b, a, settings, budgets, out string revDetail);
+            TunnelDirectionBudget? fwd = FindBestDirection(a, b, settings, out string fwdDetail);
+            TunnelDirectionBudget? rev = FindBestDirection(b, a, settings, out string revDetail);
 
             sb.Append("; fwd (");
             sb.Append(fwdDetail);
@@ -25,7 +25,6 @@ namespace WormholeSignalBridge
             RelayCandidate source,
             RelayCandidate target,
             WormholeLinkSettings settings,
-            LinkBudgetLookup budgets,
             out string detail)
         {
             TunnelDirectionBudget? best = null;
@@ -38,7 +37,7 @@ namespace WormholeSignalBridge
                 {
                     pairsChecked++;
                     string pairDetail;
-                    TunnelDirectionBudget? budget = TryDirectionBudget(source, tx, target, rx, settings, budgets, out pairDetail);
+                    TunnelDirectionBudget? budget = TryDirectionBudget(source, tx, target, rx, settings, out pairDetail);
                     if (budget.HasValue && (!best.HasValue || budget.Value.DataRate > best.Value.DataRate))
                     {
                         best = budget;
@@ -61,7 +60,6 @@ namespace WormholeSignalBridge
             RelayCandidate target,
             RealAntenna targetAntenna,
             WormholeLinkSettings settings,
-            LinkBudgetLookup budgets,
             out string detail)
         {
             detail = null;
@@ -85,18 +83,17 @@ namespace WormholeSignalBridge
                 sourceAntenna,
                 target,
                 targetAntenna,
-                settings,
-                budgets);
+                settings);
 
             if (!budget.HasValue)
             {
-                detail = $"{txLabel} <-> {rxLabel}: incompatible antennas or no common data rate";
+                detail = WormholeLinkCalculator.HasRaMouthBudget(source, sourceAntenna, target, targetAntenna)
+                    ? $"{txLabel} <-> {rxLabel}: incompatible tunnel antennas or no positive RA data rate"
+                    : $"{txLabel} <-> {rxLabel}: missing RA mouth link budget";
                 return null;
             }
 
-            bool snapshot = WormholeLinkCalculator.HasSnapshotBudget(source, sourceAntenna, target, targetAntenna, budgets);
-            detail = $"{txLabel} <-> {rxLabel} @ {RATools.PrettyPrintDataRate(budget.Value.DataRate)}" +
-                     (snapshot ? " (RA link metrics)" : " (background fallback)");
+            detail = $"{txLabel} <-> {rxLabel} @ {RATools.PrettyPrintDataRate(budget.Value.DataRate)} (RA mouth link)";
             return budget;
         }
 

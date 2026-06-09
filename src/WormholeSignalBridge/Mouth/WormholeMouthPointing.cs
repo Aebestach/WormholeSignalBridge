@@ -20,9 +20,10 @@ namespace WormholeSignalBridge
             if (antenna == null || body == null || antenna.Shape == AntennaShape.Omni)
                 return false;
 
-            return TargetsMouthLatLonAlt(antenna, body, settings) ||
-                   ModuleWormholeMouthAiming.IsRememberedMouthTarget(antenna, vessel, body) ||
-                   PhysicalPointsAtMouth(antenna, body, settings);
+            if (TargetsMouthLatLonAlt(antenna, body, settings))
+                return PhysicalPointsAtMouth(antenna, body, settings);
+
+            return antenna.Target != null && PhysicalPointsAtMouth(antenna, body, settings);
         }
 
         internal static string Describe(RealAntenna antenna, CelestialBody body, WormholeLinkSettings settings)
@@ -41,21 +42,38 @@ namespace WormholeSignalBridge
             if (antenna.Shape == AntennaShape.Omni)
                 return "omni excluded from wormhole links";
 
+            Vector3 mouth = MouthWorldPosition(body, settings);
             if (TargetsMouthLatLonAlt(antenna, body, settings))
-                return $"configured BodyLatLonAlt target on {body.name}";
+            {
+                float loss = Physics.PointingLoss(antenna, mouth);
+                if (loss < Physics.MaxPointingLoss)
+                    return $"configured BodyLatLonAlt target on {body.name}, loss {loss:F1} dB";
+
+                return $"configured BodyLatLonAlt target on {body.name}, but pointing loss {loss:F1} dB >= max {Physics.MaxPointingLoss:F1} dB";
+            }
 
             if (ModuleWormholeMouthAiming.IsRememberedMouthTarget(antenna, vessel, body))
-                return $"remembered WSB Mouth target on {body.name}";
+                return $"remembered WSB Mouth target on {body.name}, but current RA target is {DescribeTarget(antenna)}";
+
+            if (antenna.Target == null)
+                return $"no current RA target; expected {FormatCoordinates(WormholeMouthPlacement.GetMouthLatLonAlt(body, settings))}";
 
             if (PhysicalPointsAtMouth(antenna, body, settings))
-                return $"pointing at {body.name} mouth ok";
+            {
+                float loss = Physics.PointingLoss(antenna, mouth);
+                return $"pointing at {body.name} mouth ok, loss {loss:F1} dB";
+            }
 
+            float failLoss = Physics.PointingLoss(antenna, mouth);
             return $"target {DescribeTarget(antenna)}, expected {FormatCoordinates(WormholeMouthPlacement.GetMouthLatLonAlt(body, settings))}; " +
-                   $"not aimed at {body.name} mouth";
+                   $"pointing loss {failLoss:F1} dB >= max {Physics.MaxPointingLoss:F1} dB, not aimed at {body.name} mouth";
         }
 
         private static bool PhysicalPointsAtMouth(RealAntenna antenna, CelestialBody body, WormholeLinkSettings settings) =>
-            antenna.DirectionCheck(WormholeMouthPlacement.GetMouthWorldPosition(body, settings));
+            Physics.PointingLoss(antenna, MouthWorldPosition(body, settings)) < Physics.MaxPointingLoss;
+
+        private static Vector3 MouthWorldPosition(CelestialBody body, WormholeLinkSettings settings) =>
+            (Vector3)WormholeMouthPlacement.GetMouthWorldPosition(body, settings);
 
         internal static bool TargetsMouthLatLonAlt(RealAntenna antenna, CelestialBody body, WormholeLinkSettings settings)
         {

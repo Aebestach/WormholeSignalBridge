@@ -51,12 +51,23 @@ namespace WormholeSignalBridge
 
         private void RefreshRememberedTargetFromAntenna()
         {
-            if (!string.IsNullOrEmpty(wsbMouthTargetBody) || realAntenna?.RAAntenna == null)
+            if (realAntenna?.RAAntenna == null)
                 return;
+
+            WormholeLinkSettings settings = WormholeSettings.Current;
+            if (!string.IsNullOrEmpty(wsbMouthTargetBody))
+            {
+                CelestialBody rememberedBody = FlightGlobals.GetBodyByName(wsbMouthTargetBody);
+                if (rememberedBody != null &&
+                    WormholeMouthPointing.TargetsMouthLatLonAlt(realAntenna.RAAntenna, rememberedBody, settings))
+                    return;
+
+                wsbMouthTargetBody = string.Empty;
+            }
 
             foreach (CelestialBody body in DiscoveredMouthRegistry.DiscoveredBodies())
             {
-                if (WormholeMouthPointing.TargetsMouthLatLonAlt(realAntenna.RAAntenna, body, WormholeSettings.Current))
+                if (WormholeMouthPointing.TargetsMouthLatLonAlt(realAntenna.RAAntenna, body, settings))
                 {
                     wsbMouthTargetBody = body.name;
                     return;
