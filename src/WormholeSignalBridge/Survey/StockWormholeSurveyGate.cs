@@ -9,7 +9,7 @@ namespace WormholeSignalBridge
 
         internal static void Enforce(ModuleScienceExperiment experiment, Vessel vessel)
         {
-            if (experiment == null || vessel == null || KerbalismExperimentBridge.Available)
+            if (experiment == null || vessel == null)
                 return;
 
             bool valid = WormholeMouthSurveyLocation.IsValidSurveyLocation(vessel);

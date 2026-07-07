@@ -81,8 +81,7 @@ namespace WormholeSignalBridge
 
         private void EnforceKerbalismSurveyConstraints()
         {
-            if (!KerbalismExperimentBridge.Available ||
-                !KerbalismExperimentBridge.TryGetExperiment(part, out PartModule experiment, out int status))
+            if (!KerbalismExperimentBridge.TryGetExperiment(part, out PartModule experiment, out int status))
                 return;
 
             KerbalismWormholeSurveyGate.Enforce(experiment, vessel, status);
@@ -90,7 +89,7 @@ namespace WormholeSignalBridge
 
         private void EnforceStockSurveyConstraints()
         {
-            if (KerbalismExperimentBridge.Available)
+            if (KerbalismExperimentBridge.TryGetExperiment(part, out _, out _))
                 return;
 
             if (stockExperiment == null)
@@ -105,12 +104,12 @@ namespace WormholeSignalBridge
             if (body == null || !WormholeMouthSurveyLocation.IsWormholeBody(body))
                 return;
 
-            if (KerbalismExperimentBridge.Available &&
-                KerbalismExperimentBridge.TryGetExperiment(part, out _, out int status))
+            if (KerbalismExperimentBridge.TryGetExperiment(part, out PartModule experiment, out int status))
             {
                 if (lastKerbalismStatus >= 0 &&
                     !KerbalismExperimentBridge.IsWaiting(lastKerbalismStatus) &&
-                    KerbalismExperimentBridge.IsWaiting(status))
+                    KerbalismExperimentBridge.IsWaiting(status) &&
+                    KerbalismExperimentBridge.HasCollectedScience(experiment))
                     CompleteSurvey(body);
 
                 lastKerbalismStatus = status;

@@ -1,6 +1,6 @@
 # Wormhole Signal Bridge
 
-![Wormhole Signal Bridge — CommNet routing through a KEX wormhole tunnel](https://i.imgur.com/QgyrQpI.png)
+![Wormhole Signal Bridge — CommNet routing through a KEX wormhole tunnel](https://i.imgur.com/XrCKAIr.png)
 
 [English](README.md) | [中文](README-zh.md)
 

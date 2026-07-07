@@ -17,6 +17,8 @@ namespace WormholeSignalBridge
         private static FieldInfo issueField;
         private static FieldInfo expStateField;
         private static PropertyInfo statusProperty;
+        private static PropertyInfo subjectProperty;
+        private static PropertyInfo scienceCollectedTotalProperty;
         private static MethodInfo toggleMethod;
         private static bool initialized;
         private static bool available;
@@ -76,6 +78,19 @@ namespace WormholeSignalBridge
         /// <summary>Experiment motor is on: collecting, forced, or paused on issue.</summary>
         internal static bool IsCollecting(int statusValue) =>
             statusValue == ExpStatusRunning || statusValue == ExpStatusForced || statusValue == ExpStatusIssue;
+
+        internal static bool HasCollectedScience(PartModule experiment)
+        {
+            if (!Available || experiment == null || subjectProperty == null || scienceCollectedTotalProperty == null)
+                return false;
+
+            object subject = subjectProperty.GetValue(experiment, null);
+            if (subject == null)
+                return false;
+
+            object collected = scienceCollectedTotalProperty.GetValue(subject, null);
+            return collected != null && (double)collected > 0.0;
+        }
 
         internal static bool IsExpStateActive(PartModule experiment)
         {
@@ -153,13 +168,20 @@ namespace WormholeSignalBridge
                 issueField = experimentType.GetField("issue", instance);
                 expStateField = experimentType.GetField("expState", instance);
                 statusProperty = experimentType.GetProperty("Status", BindingFlags.Instance | BindingFlags.Public);
+                subjectProperty = experimentType.GetProperty("Subject", BindingFlags.Instance | BindingFlags.Public);
                 toggleMethod = experimentType.GetMethod("Toggle", instance, null, new[] { typeof(bool) }, null);
+
+                Type subjectDataType = assembly.assembly.GetType("KERBALISM.SubjectData");
+                if (subjectDataType != null)
+                    scienceCollectedTotalProperty = subjectDataType.GetProperty("ScienceCollectedTotal", BindingFlags.Instance | BindingFlags.Public);
 
                 available = experimentIdField != null &&
                             (statusField != null || statusProperty != null) &&
                             expStateField != null &&
                             toggleMethod != null &&
-                            issueField != null;
+                            issueField != null &&
+                            subjectProperty != null &&
+                            scienceCollectedTotalProperty != null;
                 return;
             }
         }

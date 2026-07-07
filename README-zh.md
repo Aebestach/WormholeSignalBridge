@@ -1,6 +1,6 @@
 # Wormhole Signal Bridge
 
-![Wormhole Signal Bridge — 经 KEX 虫洞隧道的 CommNet 路由示意](https://i.imgur.com/QgyrQpI.png)
+![Wormhole Signal Bridge — 经 KEX 虫洞隧道的 CommNet 路由示意](https://i.imgur.com/XrCKAIr.png)
 
 [English](README.md) | [中文](README-zh.md)
 

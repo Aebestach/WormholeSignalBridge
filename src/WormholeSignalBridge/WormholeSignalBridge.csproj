@@ -1,93 +1,62 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C4E8A1B2-3D5F-4A6E-9B0C-1D2E3F4A5B6C}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>WormholeSignalBridge</RootNamespace>
+    <Version>2.0.0</Version>
+    <FileVersion>$(Version)</FileVersion>
     <AssemblyName>WormholeSignalBridge</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
+    <RootNamespace>WormholeSignalBridge</RootNamespace>
+    <TargetFramework>net481</TargetFramework>
+
+    <Description>Routes RealAntennas comm links through KEX wormholes.</Description>
+    <Product>WormholeSignalBridge</Product>
+    <Copyright>Copyright © 2026 Aebestach</Copyright>
+
+    <KSPBT_ModRoot>$(ProjectRootDir)GameData\$(AssemblyName)</KSPBT_ModRoot>
+    <KSPBT_ModPluginFolder>Plugins</KSPBT_ModPluginFolder>
+
     <LangVersion>8.0</LangVersion>
-    <DeployOutputPath>$(MSBuildProjectDirectory)\..\..\GameData\WormholeSignalBridge\Plugins\</DeployOutputPath>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(DeployOutputPath)</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <Prefer32Bit>false</Prefer32Bit>
-    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(DeployOutputPath)</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Prefer32Bit>false</Prefer32Bit>
-    <PlatformTarget>x64</PlatformTarget>
+
+  <PropertyGroup Condition=" '$(KSPBT_ModVersion)' != '' ">
+    <Version>$(KSPBT_ModVersion)</Version>
+    <FileVersion>$(Version)</FileVersion>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="KEX-Wormholes">
-      <HintPath>..\..\..\..\KSPDLL\others\KEX-Wormholes.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="RealAntennas, Version=2.6.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\KSPDLL\others\RealAntennas.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\UnityEngine.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\..\..\KSPDLL\KSP_x64_Data\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <PackageReference Include="KSPBuildTools" Version="1.1.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Bootstrap\WormholeBridgeBootstrap.cs" />
-    <Compile Include="Core\CelestialBodyDisplay.cs" />
-    <Compile Include="Core\Local.cs" />
-    <Compile Include="Core\Log.cs" />
-    <Compile Include="Core\WormholeSettings.cs" />
-    <Compile Include="Linking\WormholeLinkBuilder.cs" />
-    <Compile Include="Linking\WormholeLinkCalculator.cs" />
-    <Compile Include="Linking\WormholeLinkDiagnostics.cs" />
-    <Compile Include="Mouth\WormholeMouthNodeManager.cs" />
-    <Compile Include="Mouth\WormholeMouthPlacement.cs" />
-    <Compile Include="Mouth\WormholeMouthPointing.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Registry\DiscoveredMouthRegistry.cs" />
-    <Compile Include="Registry\WormholeRegistry.cs" />
-    <Compile Include="Survey\KerbalismExperimentBridge.cs" />
-    <Compile Include="Survey\KerbalismWormholeSurveyGate.cs" />
-    <Compile Include="Survey\ModuleWormholeMouthSurvey.cs" />
-    <Compile Include="Survey\StockWormholeSurveyGate.cs" />
-    <Compile Include="Survey\SurveyPawMarks.cs" />
-    <Compile Include="Survey\WormholeMouthScienceResults.cs" />
-    <Compile Include="Survey\WormholeMouthSurveyAltitudeLabels.cs" />
-    <Compile Include="Survey\WormholeMouthSurveyNarrative.cs" />
-    <Compile Include="Survey\WormholeMouthSurveyLocation.cs" />
-    <Compile Include="Targeting\ModuleWormholeMouthAiming.cs" />
-    <Compile Include="Targeting\WormholeMouthAiming.cs" />
-    <Compile Include="Targeting\WormholeMouthTargetEvaluator.cs" />
-    <Compile Include="Targeting\WormholeMouthTargetGUI.cs" />
-    <Compile Include="Targeting\WormholeMouthTargetManager.cs" />
+    <ModReference Include="RealAntennas">
+      <DLLPath>GameData/RealAntennas/Plugins/RealAntennas.dll</DLLPath>
+      <KSPAssemblyVersion>2.0</KSPAssemblyVersion>
+    </ModReference>
+    <ModReference Include="KEX-Wormholes">
+      <DLLPath>GameData/KopernicusExpansion/Plugins/KEX-Wormholes.dll</DLLPath>
+      <KSPAssemblyName>KopernicusExpansion.Wormholes</KSPAssemblyName>
+      <KSPAssemblyVersion>1.0</KSPAssemblyVersion>
+    </ModReference>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <ItemGroup>
+    <KSPVersionFile Include=".">
+      <Destination>$(KSPBT_ModRoot)/$(AssemblyName).version</Destination>
+      <URL>https://github.com/Aebestach/WormholeSignalBridge/releases/latest/download/WormholeSignalBridge.version</URL>
+      <Download>https://github.com/Aebestach/WormholeSignalBridge/releases/latest</Download>
+      <KSP_Version>1.12.5</KSP_Version>
+      <KSP_Version_Min>1.12.0</KSP_Version_Min>
+      <KSP_Version_Max>1.12.99</KSP_Version_Max>
+    </KSPVersionFile>
+  </ItemGroup>
+
+  <Target Name="DeployGameDataToKsp" AfterTargets="KSPBT_CopyDLLsToPluginFolder" Condition=" '$(KSPBT_GameRoot)' != '' ">
+    <PropertyGroup>
+      <_KspModDeployDir>$(KSPBT_GameRoot)/GameData/$(AssemblyName)</_KspModDeployDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ModDeployFiles Include="$(KSPBT_ModRoot)/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ModDeployFiles)" DestinationFolder="$(_KspModDeployDir)/%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Text="Deployed GameData to $(_KspModDeployDir)" Importance="high" />
+  </Target>
 </Project>
