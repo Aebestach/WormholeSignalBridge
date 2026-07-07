@@ -8,12 +8,11 @@
 
     <Description>Routes RealAntennas comm links through KEX wormholes.</Description>
     <Product>WormholeSignalBridge</Product>
-    <Copyright>Copyright © 2026 Aebestach</Copyright>
 
     <KSPBT_ModRoot>$(ProjectRootDir)GameData\$(AssemblyName)</KSPBT_ModRoot>
     <KSPBT_ModPluginFolder>Plugins</KSPBT_ModPluginFolder>
 
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <DebugType>portable</DebugType>
   </PropertyGroup>
 
