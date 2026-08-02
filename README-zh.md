@@ -10,7 +10,7 @@
 
 ## 工作原理
 
-WSB 通过 RealAntennas 网络事件接入，不再 Harmony 补丁 RA 内部逻辑：
+WSB 通过 RealAntennas 网络事件接入：
 
 1. **网络预更新** — 刷新 KEX 虫洞注册表，并同步不可见的 **虫洞口代理节点**（每个虫洞天体各一个）。每个代理是停在 Mouth Body Lat/Lon/Alt 上的地面站式 `RACommNode`，在各 RA 频段挂载高增益数字天线，供 Precompute 计算正常的 **中继 ↔ Mouth** 链路预算。
 2. **网络更新完成** — 扫描绕飞中继，为符合条件的定向天线对注入 **A 口 ↔ B 口** 隧道跳路。
@@ -23,7 +23,7 @@ Mouth 未勘测前，代理节点使用朝向母星的临时经纬度估计；GR
 
 ## 依赖
 
-- [RealAntennas](https://github.com/KSP-RO/RealAntennas) 2.x
+- [RealAntennas](https://github.com/KSP-RO/RealAntennas) v2.12.0.0 及以上
 - [Kopernicus Expansion Continued](https://github.com/VabienArt/KopernicusExpansion-Continueder)（KEX-Wormholes）
 
 **可选：** [Kerbalism](https://github.com/Kerbalism/Kerbalism) 且启用 **FeatureScience** — 在 GRAVMAX 上追加 Kerbalism 实验条目，与 stock WSB 扫描并存。隧道链路与 stock 科学不依赖 Kerbalism。

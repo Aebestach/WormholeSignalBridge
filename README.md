@@ -10,7 +10,7 @@ In saves like **Kcalbeloh System**, a familiar scene plays out: a relay orbits J
 
 ## How it works
 
-WSB hooks RealAntennas network events instead of patching RA internals:
+WSB hooks RealAntennas network events:
 
 1. **On network pre-update** — refresh the KEX wormhole registry and sync invisible **mouth proxy nodes** (one per wormhole celestial body). Each proxy is a ground-station-style `RACommNode` parked at the mouth’s Body Lat/Lon/Alt, carrying a high-gain digital antenna on every RA band so Precompute can build normal **relay ↔ mouth** link budgets.
 2. **On network update complete** — scan orbiting relays, then inject **mouth A ↔ mouth B** tunnel hops for qualifying antenna pairs.
@@ -23,7 +23,7 @@ Before a mouth is surveyed, proxy nodes use a provisional parent-facing lat/lon 
 
 ## Requirements
 
-- [RealAntennas](https://github.com/KSP-RO/RealAntennas) 2.x
+- [RealAntennas](https://github.com/KSP-RO/RealAntennas) v2.12.0.0 or later
 - [Kopernicus Expansion Continued](https://github.com/VabienArt/KopernicusExpansion-Continueder) (KEX-Wormholes)
 
 **Optional:** [Kerbalism](https://github.com/Kerbalism/Kerbalism) with **FeatureScience** — adds a Kerbalism experiment entry on GRAVMAX alongside the stock WSB scan. Not required for tunnel links or stock science.
