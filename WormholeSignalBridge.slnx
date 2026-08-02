@@ -1,0 +1,6 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Release" />
+  </Configurations>
+  <Project Path="src/WormholeSignalBridge/WormholeSignalBridge.csproj" Id="a7c3e891-4f2b-4d6e-9a1c-8b5e3d7f2c41" />
+</Solution>
