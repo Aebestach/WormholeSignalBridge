@@ -2,6 +2,7 @@ using System;
 using RealAntennas;
 using RealAntennas.Targeting;
 using UnityEngine;
+using RAPhysics = RealAntennas.Physics;
 
 namespace WormholeSignalBridge
 {
@@ -45,11 +46,11 @@ namespace WormholeSignalBridge
             Vector3 mouth = MouthWorldPosition(body, settings);
             if (TargetsMouthLatLonAlt(antenna, body, settings))
             {
-                float loss = Physics.PointingLoss(antenna, mouth);
-                if (loss < Physics.MaxPointingLoss)
+                float loss = RAPhysics.PointingLoss(antenna, mouth);
+                if (loss < RAPhysics.MaxPointingLoss)
                     return $"configured BodyLatLonAlt target on {body.name}, loss {loss:F1} dB";
 
-                return $"configured BodyLatLonAlt target on {body.name}, but pointing loss {loss:F1} dB >= max {Physics.MaxPointingLoss:F1} dB";
+                return $"configured BodyLatLonAlt target on {body.name}, but pointing loss {loss:F1} dB >= max {RAPhysics.MaxPointingLoss:F1} dB";
             }
 
             if (ModuleWormholeMouthAiming.IsRememberedMouthTarget(antenna, vessel, body))
@@ -60,17 +61,17 @@ namespace WormholeSignalBridge
 
             if (PhysicalPointsAtMouth(antenna, body, settings))
             {
-                float loss = Physics.PointingLoss(antenna, mouth);
+                float loss = RAPhysics.PointingLoss(antenna, mouth);
                 return $"pointing at {body.name} mouth ok, loss {loss:F1} dB";
             }
 
-            float failLoss = Physics.PointingLoss(antenna, mouth);
+            float failLoss = RAPhysics.PointingLoss(antenna, mouth);
             return $"target {DescribeTarget(antenna)}, expected {FormatCoordinates(WormholeMouthPlacement.GetMouthLatLonAlt(body, settings))}; " +
-                   $"pointing loss {failLoss:F1} dB >= max {Physics.MaxPointingLoss:F1} dB, not aimed at {body.name} mouth";
+                   $"pointing loss {failLoss:F1} dB >= max {RAPhysics.MaxPointingLoss:F1} dB, not aimed at {body.name} mouth";
         }
 
         private static bool PhysicalPointsAtMouth(RealAntenna antenna, CelestialBody body, WormholeLinkSettings settings) =>
-            Physics.PointingLoss(antenna, MouthWorldPosition(body, settings)) < Physics.MaxPointingLoss;
+            RAPhysics.PointingLoss(antenna, MouthWorldPosition(body, settings)) < RAPhysics.MaxPointingLoss;
 
         private static Vector3 MouthWorldPosition(CelestialBody body, WormholeLinkSettings settings) =>
             (Vector3)WormholeMouthPlacement.GetMouthWorldPosition(body, settings);

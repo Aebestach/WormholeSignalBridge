@@ -4,6 +4,7 @@ using RealAntennas;
 using RealAntennas.Antenna;
 using RealAntennas.Network;
 using UnityEngine;
+using RAPhysics = RealAntennas.Physics;
 
 namespace WormholeSignalBridge
 {
@@ -153,7 +154,7 @@ namespace WormholeSignalBridge
                     antennaDiameter = (float)settings.MouthProxyDishDiameter,
                     SymbolRate = settings.MouthProxySymbolRate
                 };
-                antenna.Gain = Physics.GainFromDishDiamater(antenna.antennaDiameter, band.Frequency, tech.ReflectorEfficiency);
+                antenna.Gain = RAPhysics.GainFromDishDiamater(antenna.antennaDiameter, band.Frequency, tech.ReflectorEfficiency);
                 node.RAAntennaList.Add(antenna);
             }
         }
